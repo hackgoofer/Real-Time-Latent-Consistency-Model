@@ -11,3 +11,4 @@ controlnet-aux==0.0.7
 peft==0.6.0
 xformers; sys_platform != 'darwin' or platform_machine != 'arm64'
 markdown2
+openai
