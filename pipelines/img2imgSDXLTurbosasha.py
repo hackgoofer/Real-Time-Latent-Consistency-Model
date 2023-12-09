@@ -46,7 +46,6 @@ def pil_to_base64(image):
     img_str = base64.b64encode(buffered.getvalue())
     return img_str.decode("utf-8")
 
-
 def get_sys_promt(use_gptv):
     what_users_will_say=[
         ("make me look like an old man", "a close up image of an old man"),
@@ -117,6 +116,8 @@ def call_openai_gptv(system_prompt, input_text, image_base64, model='gpt-4-visio
     )
     reply = response.choices[0].message.content
     return reply
+
+prompt_for_gpt = ""
     
 class Pipeline:
     class Info(BaseModel):
@@ -232,7 +233,9 @@ class Pipeline:
     def predict(self, params: "Pipeline.InputParams") -> Image.Image:
         generator = torch.manual_seed(params.seed)
         print(params.image)
-        self.alter_prompt(params)
+        if prompt_for_gpt != params.prompt:        
+            self.alter_prompt(params)
+            prompt_for_gpt = params.prompt
 
         prompt_embeds, pooled_prompt_embeds = self.pipe.compel_proc(
             [params.prompt, params.negative_prompt]
