@@ -116,8 +116,6 @@ def call_openai_gptv(system_prompt, input_text, image_base64, model='gpt-4-visio
     )
     reply = response.choices[0].message.content
     return reply
-
-prompt_for_gpt = ""
     
 class Pipeline:
     class Info(BaseModel):
@@ -216,6 +214,8 @@ class Pipeline:
             returned_embeddings_type=ReturnedEmbeddingsType.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED,
             requires_pooled=[False, True],
         )
+        self.old_prompt = ""
+
 
     def alter_prompt(self, params):
         import time
@@ -233,9 +233,9 @@ class Pipeline:
     def predict(self, params: "Pipeline.InputParams") -> Image.Image:
         generator = torch.manual_seed(params.seed)
         print(params.image)
-        if prompt_for_gpt != params.prompt:        
+        if self.old_prompt != params.prompt:        
             self.alter_prompt(params)
-            prompt_for_gpt = params.prompt
+            self.old_prompt = params.prompt
 
         prompt_embeds, pooled_prompt_embeds = self.pipe.compel_proc(
             [params.prompt, params.negative_prompt]
