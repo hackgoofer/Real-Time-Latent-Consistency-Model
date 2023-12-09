@@ -17,7 +17,9 @@ from PIL import Image
 import math
 from openai import OpenAI
 import os
+from io import BytesIO
 from dotenv import load_dotenv
+import base64
 
 load_dotenv()
 
@@ -45,7 +47,7 @@ def pil_to_base64(image):
     return img_str.decode("utf-8")
 
 
-def get_sys_prompt(self, use_gptv):
+def get_sys_promt(use_gptv):
     what_users_will_say=[
         ("make me look like an old man", "a close up image of an old man"),
         ("more beautiful", "a close up image of a beautiful person") ,
@@ -68,6 +70,53 @@ def get_sys_prompt(self, use_gptv):
     """
     sys_prompt = prompt_for_GPTV if use_gptv else prompt_for_GPT
     return sys_prompt
+
+# call openai to generate a response using chatCompletion api
+def call_openai(system_prompt, input_text, model="gpt-4-1106-preview"):
+    completion = client.chat.completions.create(
+        # Use GPT 3.5 as the LLM
+        temperature=0.7,
+        model=model,
+        # Pre-define conversation messages for the possible roles
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": input_text},
+        ],
+    )
+    return completion.choices[0].message.content
+    
+def call_openai_gptv(system_prompt, input_text, image_base64, model='gpt-4-vision-preview'):
+    messages = [
+        {
+            "role": "system",
+            "content": [
+                {
+                    "type": "text",
+                    "text": system_prompt
+                },
+            ],
+        },
+        {
+           "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": input_text,
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/png;base64,{image_base64}"},
+                },
+            ],
+        },
+    ]
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        max_tokens=300,
+    )
+    reply = response.choices[0].message.content
+    return reply
     
 class Pipeline:
     class Info(BaseModel):
@@ -167,55 +216,6 @@ class Pipeline:
             requires_pooled=[False, True],
         )
 
-    
-        
-    # call openai to generate a response using chatCompletion api
-    def call_openai(system_prompt, input_text, model="gpt-4-1106-preview"):
-        completion = client.chat.completions.create(
-            # Use GPT 3.5 as the LLM
-            temperature=0.7,
-            model=model,
-            # Pre-define conversation messages for the possible roles
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": input_text},
-            ],
-        )
-        return completion.choices[0].message.content
-    
-    def call_openai_gptv(system_prompt, input_text, image_base64, model='gpt-4-vision-preview'):
-        messages = [
-            {
-                "role": "system",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": system_prompt
-                    },
-                ],
-            },
-            {
-               "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": input_text,
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": f"data:image/png;base64,{image_base64}"},
-                    },
-                ],
-            },
-        ]
-        response = client.chat.completions.create(
-            model=model,
-            messages=messages,
-            max_tokens=300,
-        )
-        reply = response.choices[0].message.content
-        return reply
-
     def alter_prompt(self, params):
         import time
         prompt = params.prompt
@@ -225,7 +225,7 @@ class Pipeline:
         print(f"useGPTV {use_gptv}")
         start_time = time.time()
         # user_input = "I think you can just say things like 'why not make me a santa clause'"
-        output = call_openai_gptv(sys_prompt, prompt, image_base64=image_base64) if use_gptv else call_openai(sys_prompt, user_input) 
+        output = call_openai_gptv(sys_prompt, prompt, image_base64=image_base64) if use_gptv else call_openai(sys_prompt, prompt) 
         print(f"duration for calling GPTV/{use_gptv}: {time.time() - start_time}")
         params.prompt = output
     

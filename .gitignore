@@ -3,3 +3,4 @@ venv/
 public/
 *.pem
 .env
+pipelines/.ipynb_checkpoints/*
