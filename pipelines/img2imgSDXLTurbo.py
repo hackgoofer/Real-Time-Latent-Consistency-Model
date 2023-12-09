@@ -147,6 +147,7 @@ class Pipeline:
 
     def predict(self, params: "Pipeline.InputParams") -> Image.Image:
         generator = torch.manual_seed(params.seed)
+        print(f"the prompt is: {params.prompt}")
         prompt_embeds, pooled_prompt_embeds = self.pipe.compel_proc(
             [params.prompt, params.negative_prompt]
         )
