@@ -14,6 +14,7 @@
   </label>
   <div class="text-normal flex items-center rounded-md border border-gray-700">
     <textarea
+      id="my-favorite-textarea"
       class="mx-1 w-full px-3 py-2 font-light outline-none dark:text-black"
       title={params?.title}
       placeholder="Add your prompt here..."
