@@ -219,6 +219,7 @@ class Pipeline:
 
     def alter_prompt(self, params):
         import time
+        print(f"altering prompt")
         prompt = params.prompt
         use_gptv = params.use_gptv if hasattr(params, 'use_gptv') else False
         image_base64 = pil_to_base64(params.image)
@@ -233,9 +234,10 @@ class Pipeline:
     def predict(self, params: "Pipeline.InputParams") -> Image.Image:
         generator = torch.manual_seed(params.seed)
         print(params.image)
+        print(f"{params.prompt}\t{self.old_prompt}")
         if self.old_prompt != params.prompt:        
-            self.alter_prompt(params)
             self.old_prompt = params.prompt
+            self.alter_prompt(params)
 
         prompt_embeds, pooled_prompt_embeds = self.pipe.compel_proc(
             [params.prompt, params.negative_prompt]
