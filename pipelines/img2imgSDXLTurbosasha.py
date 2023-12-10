@@ -20,6 +20,7 @@ import os
 from io import BytesIO
 from dotenv import load_dotenv
 import base64
+import asyncio
 
 load_dotenv()
 
@@ -69,6 +70,9 @@ def get_sys_promt(use_gptv):
     """
     sys_prompt = prompt_for_GPTV if use_gptv else prompt_for_GPT
     return sys_prompt
+
+async def async_wrapper(abc, *args, **kwargs):
+    return await asyncio.to_thread(abc, *args, **kwargs)
 
 # call openai to generate a response using chatCompletion api
 def call_openai(system_prompt, input_text, model="gpt-4-1106-preview"):
@@ -217,7 +221,7 @@ class Pipeline:
         self.old_prompt = ""
 
 
-    def alter_prompt(self, params):
+    async def alter_prompt(self, params):
         import time
         print(f"altering prompt")
         prompt = params.prompt
@@ -226,19 +230,21 @@ class Pipeline:
         sys_prompt = get_sys_promt(use_gptv)
         print(f"useGPTV {use_gptv}")
         start_time = time.time()
-        # user_input = "I think you can just say things like 'why not make me a santa clause'"
-        output = call_openai_gptv(sys_prompt, prompt, image_base64=image_base64) if use_gptv else call_openai(sys_prompt, prompt) 
+        if use_gptv:
+            output = await async_wrapper(call_openai_gptv, sys_prompt, prompt, image_base64=image_base64)
+        else:
+            output = await async_wrapper(call_openai, sys_prompt, prompt)
+            
         print(f"duration for calling GPTV/{use_gptv}: {time.time() - start_time}")
         params.prompt = output
     
-    def predict(self, params: "Pipeline.InputParams") -> Image.Image:
+    async def predict(self, params: "Pipeline.InputParams") -> Image.Image:
         generator = torch.manual_seed(params.seed)
-        print(params.image)
-        print(f"{params.prompt}\t{self.old_prompt}")
         if self.old_prompt != params.prompt:        
             self.old_prompt = params.prompt
-            self.alter_prompt(params)
-
+            asyncio.create_task(self.alter_prompt(params))
+            
+        print(f"running...")  
         prompt_embeds, pooled_prompt_embeds = self.pipe.compel_proc(
             [params.prompt, params.negative_prompt]
         )

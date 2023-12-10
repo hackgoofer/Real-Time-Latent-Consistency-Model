@@ -112,7 +112,7 @@ def init_app(app: FastAPI, user_data: UserData, args: Args, pipeline):
                         continue
 
                     last_params = params
-                    image = pipeline.predict(params)
+                    image = await pipeline.predict(params)
                     if image is None:
                         await websocket.send_json({"status": "send_frame"})
                         continue
